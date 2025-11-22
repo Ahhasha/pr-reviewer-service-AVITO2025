@@ -58,5 +58,4 @@ func ValidateCreateTeam(team *api.Team) error {
 		}
 	}
 	return nil
-
 }
