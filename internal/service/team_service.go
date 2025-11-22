@@ -23,3 +23,7 @@ func (s *TeamService) CreateTeam(ctx context.Context, team *api.Team) (*api.Team
 	}
 	return createdTeam, nil
 }
+
+func (s *TeamService) GetTeam(ctx context.Context, teamName string) (*api.Team, error) {
+	return s.teamRepo.GetByName(ctx, teamName)
+}
