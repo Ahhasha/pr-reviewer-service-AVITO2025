@@ -23,7 +23,7 @@ func main() {
 	r := chi.NewRouter()
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("RABOTAET"))
+		w.Write([]byte("OK"))
 	})
 
 	log.Println("Server start on :8080")
