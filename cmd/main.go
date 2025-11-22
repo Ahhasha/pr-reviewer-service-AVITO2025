@@ -5,8 +5,10 @@ import (
 	"log"
 	"net/http"
 	"pr-reviewer-service-AVITO2025/internal/database"
-
-	"github.com/go-chi/chi/v5"
+	myhttp "pr-reviewer-service-AVITO2025/internal/http"
+	"pr-reviewer-service-AVITO2025/internal/http/handlers"
+	"pr-reviewer-service-AVITO2025/internal/service"
+	"pr-reviewer-service-AVITO2025/internal/storage/postgres"
 )
 
 func main() {
@@ -20,12 +22,12 @@ func main() {
 	}
 	defer pool.Close()
 
-	r := chi.NewRouter()
+	teamRepo := postgres.NewTeamRepo(pool)
+	teamService := service.NewTeamService(teamRepo)
+	teamHandler := handlers.NewTeamHandler(teamService)
 
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("OK"))
-	})
+	router := myhttp.NewRouter(teamHandler)
 
 	log.Println("Server start on :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
