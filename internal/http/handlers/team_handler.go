@@ -60,3 +60,33 @@ func (h *TeamHandler) CreateTeam(w http.ResponseWriter, r *http.Request) {
 		"team": team,
 	})
 }
+
+func (h *TeamHandler) GetTeam(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	teamName := r.URL.Query().Get("team_name")
+	if teamName == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(api.NewErrorResponse("VALIDATION_ERROR", "team_name is required"))
+		return
+	}
+
+	team, err := h.teamService.GetTeam(ctx, teamName)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch err {
+		case postgres.ErrTeamNotFound:
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(api.NewErrorResponse("NOT_FOUND", "Team not found"))
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(api.NewErrorResponse("INTERNAL_ERROR", "Internal server error"))
+		}
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(team)
+}
