@@ -33,9 +33,10 @@ func (r *TeamRepo) Create(ctx context.Context, team *api.Team) (*api.Team, error
 	defer tx.Rollback(ctx)
 
 	teamID := uuid.New().String()
-	teamQuery := `INSERT INTO teams (id, team_name) 
-				  VALUES ($1, $2)
-				  `
+	teamQuery := `
+				INSERT INTO teams (id, team_name) 
+				VALUES ($1, $2)
+	`
 
 	_, err = tx.Exec(ctx, teamQuery, teamID, team.TeamName)
 	if err != nil {
@@ -49,15 +50,16 @@ func (r *TeamRepo) Create(ctx context.Context, team *api.Team) (*api.Team, error
 					ON CONFLICT (id) DO UPDATE SET
 					username = EXCLUDED.username,
 					is_active = EXCLUDED.is_active
-		            `
+		`
 		_, err = tx.Exec(ctx, userQuery, member.UserId, member.Username, member.IsActive)
 		if err != nil {
 			return nil, fmt.Errorf("create or update user: %w", err)
 		}
 
-		memberQuery := `INSERT INTO team_members (team_id, user_id)
+		memberQuery := `
+						INSERT INTO team_members (team_id, user_id)
 						VALUES ($1, $2)
-						`
+		`
 		_, err = tx.Exec(ctx, memberQuery, teamID, member.UserId)
 		if err != nil {
 			return nil, fmt.Errorf("add user in team: %w", err)
@@ -83,11 +85,12 @@ func (r *TeamRepo) GetByName(ctx context.Context, teamName string) (*api.Team, e
 		return nil, ErrTeamNotFound
 	}
 
-	query := `SELECT u.id, u.username, u.is_active
-			  FROM users u
-			  JOIN team_members tm ON u.id = tm.user_id
-			  WHERE tm.team_id = $1
-			  `
+	query := `
+			SELECT u.id, u.username, u.is_active
+			FROM users u
+			JOIN team_members tm ON u.id = tm.user_id
+			WHERE tm.team_id = $1
+	`
 	rows, err := r.pool.Query(ctx, query, teamID)
 	if err != nil {
 		return nil, fmt.Errorf("query team members: %w", err)
@@ -102,7 +105,7 @@ func (r *TeamRepo) GetByName(ctx context.Context, teamName string) (*api.Team, e
 		var member api.TeamMember
 		err := rows.Scan(&member.UserId, &member.Username, &member.IsActive)
 		if err != nil {
-			return nil, fmt.Errorf("Scan team member: %w", err)
+			return nil, fmt.Errorf("scan team member: %w", err)
 		}
 		team.Members = append(team.Members, member)
 	}

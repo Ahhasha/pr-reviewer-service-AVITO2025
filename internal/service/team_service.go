@@ -24,7 +24,7 @@ func (s *TeamService) CreateTeam(ctx context.Context, team *api.Team) (*api.Team
 
 	createdTeam, err := s.teamRepo.Create(ctx, team)
 	if err != nil {
-		s.lgr.Error("failed to create team", "method", "CreateTeam", "team_name", team.TeamName, "error", err)
+		s.lgr.Error("failed to create team", "method", "CreateTeam", "team_name", team.TeamName, "error", err.Error())
 		return nil, err
 	}
 	s.lgr.Info("team created", "team_name", team.TeamName, "members_count", len(team.Members))
@@ -35,8 +35,9 @@ func (s *TeamService) GetTeam(ctx context.Context, teamName string) (*api.Team, 
 	team, err := s.teamRepo.GetByName(ctx, teamName)
 
 	if err != nil {
-		s.lgr.Error("failed to get team", "GetTeam", "team_name", teamName, "error", err)
+		s.lgr.Error("failed to get team", "method", "GetTeam", "team_name", teamName, "error", err.Error())
 		return nil, err
 	}
+	s.lgr.Info("the team has been received", "team_name", teamName, "members_count", len(team.Members))
 	return team, nil
 }

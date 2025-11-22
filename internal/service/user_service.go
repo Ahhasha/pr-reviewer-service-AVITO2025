@@ -22,7 +22,7 @@ func NewUserService(userRepo *postgres.UserRepo, lgr *slog.Logger) *UserService 
 func (s *UserService) SetUserActive(ctx context.Context, userID string, isActive bool) (*api.User, error) {
 	user, err := s.userRepo.SetUserActive(ctx, userID, isActive)
 	if err != nil {
-		s.lgr.Error("failed to set user active", "method", "SetUserActive", "user_id", userID, "is_active", isActive, "error", err)
+		s.lgr.Error("failed to set user active", "method", "SetUserActive", "user_id", userID, "is_active", isActive, "error", err.Error())
 		return nil, err
 	}
 	s.lgr.Info("user active update", "user_id", userID, "is_active", isActive, "username", user.Username)
