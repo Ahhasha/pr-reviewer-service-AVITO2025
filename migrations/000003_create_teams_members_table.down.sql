@@ -1,0 +1,1 @@
+DROP TABLE teams_members;

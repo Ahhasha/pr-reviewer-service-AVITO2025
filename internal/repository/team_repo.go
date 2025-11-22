@@ -55,7 +55,7 @@ func (r *TeamRepo) Create(ctx context.Context, team *models.Team) (*models.Team,
 			return nil, fmt.Errorf("create or update user: %w", err)
 		}
 
-		memberQuery := `INSERT INTO team_member (team_id, user_id)
+		memberQuery := `INSERT INTO team_members (team_id, user_id)
 						VALUES ($1, $2)
 						`
 		_, err = tx.Exec(ctx, memberQuery, team.ID, member.UserID)
