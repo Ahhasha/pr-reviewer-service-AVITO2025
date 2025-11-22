@@ -1,4 +1,4 @@
 CREATE TABLE teams (
     id TEXT PRIMARY KEY,
-    name TEXT UNIQUE NOT NULL
+    team_name TEXT UNIQUE NOT NULL
 );

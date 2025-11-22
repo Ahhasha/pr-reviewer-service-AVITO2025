@@ -33,7 +33,7 @@ func (r *TeamRepo) Create(ctx context.Context, team *api.Team) (*api.Team, error
 	defer tx.Rollback(ctx)
 
 	teamID := uuid.New().String()
-	teamQuery := `INSERT INTO teams (id, name) 
+	teamQuery := `INSERT INTO teams (id, team_name) 
 				  VALUES ($1, $2)
 				  `
 
