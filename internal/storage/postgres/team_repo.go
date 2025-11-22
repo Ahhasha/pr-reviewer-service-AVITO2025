@@ -72,3 +72,39 @@ func (r *TeamRepo) Create(ctx context.Context, team *api.Team) (*api.Team, error
 
 	return team, nil
 }
+
+func (r *TeamRepo) GetByName(ctx context.Context, teamName string) (*api.Team, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var teamID string
+	err := r.pool.QueryRow(ctx, "SELECT id FROM teams WHERE team_name = $1", teamName).Scan(&teamID)
+	if err != nil {
+		return nil, ErrTeamNotFound
+	}
+
+	query := `SELECT u.id, u.username, u.is_active
+			  FROM users u
+			  JOIN team_members tm ON u.id = tm.user_id
+			  WHERE tm.team_id = $1
+			  `
+	rows, err := r.pool.Query(ctx, query, teamID)
+	if err != nil {
+		return nil, fmt.Errorf("query team members: %w", err)
+	}
+	defer rows.Close()
+
+	var team api.Team
+	team.TeamName = teamName
+	team.Members = []api.TeamMember{}
+
+	for rows.Next() {
+		var member api.TeamMember
+		err := rows.Scan(&member.UserId, &member.Username, &member.IsActive)
+		if err != nil {
+			return nil, fmt.Errorf("Scan team member: %w", err)
+		}
+		team.Members = append(team.Members, member)
+	}
+	return &team, nil
+}
