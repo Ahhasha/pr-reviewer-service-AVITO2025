@@ -1,10 +1,10 @@
-package repository
+package postgres
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"pr-reviewer-service-AVITO2025/internal/models"
+	"pr-reviewer-service-AVITO2025/internal/api"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,7 +22,7 @@ func NewTeamRepo(pool *pgxpool.Pool) *TeamRepo {
 	return &TeamRepo{pool: pool}
 }
 
-func (r *TeamRepo) Create(ctx context.Context, team *models.Team) (*models.Team, error) {
+func (r *TeamRepo) Create(ctx context.Context, team *api.Team) (*api.Team, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -32,14 +32,14 @@ func (r *TeamRepo) Create(ctx context.Context, team *models.Team) (*models.Team,
 	}
 	defer tx.Rollback(ctx)
 
-	team.ID = uuid.New().String()
+	teamID := uuid.New().String()
 	teamQuery := `INSERT INTO teams (id, name) 
 				  VALUES ($1, $2)
 				  `
 
-	_, err = tx.Exec(ctx, teamQuery, team.ID, team.Name)
+	_, err = tx.Exec(ctx, teamQuery, teamID, team.TeamName)
 	if err != nil {
-		return nil, fmt.Errorf("create team: %w", err)
+		return nil, ErrTeamExists
 	}
 
 	for _, member := range team.Members {
@@ -50,7 +50,7 @@ func (r *TeamRepo) Create(ctx context.Context, team *models.Team) (*models.Team,
 					username = EXCLUDED.username,
 					is_active = EXCLUDED.is_active
 		            `
-		_, err = tx.Exec(ctx, userQuery, member.UserID, member.Username, member.IsActive)
+		_, err = tx.Exec(ctx, userQuery, member.UserId, member.Username, member.IsActive)
 		if err != nil {
 			return nil, fmt.Errorf("create or update user: %w", err)
 		}
@@ -58,7 +58,7 @@ func (r *TeamRepo) Create(ctx context.Context, team *models.Team) (*models.Team,
 		memberQuery := `INSERT INTO team_members (team_id, user_id)
 						VALUES ($1, $2)
 						`
-		_, err = tx.Exec(ctx, memberQuery, team.ID, member.UserID)
+		_, err = tx.Exec(ctx, memberQuery, teamID, member.UserId)
 		if err != nil {
 			return nil, fmt.Errorf("add user in team: %w", err)
 		}

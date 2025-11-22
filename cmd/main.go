@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"pr-reviewer-service-AVITO2025/internal/repository"
+	"pr-reviewer-service-AVITO2025/internal/database"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -14,7 +14,7 @@ func main() {
 
 	databaseURL := "postgresql://postgres:pr_service_password@localhost:5432/pr_service?sslmode=disable"
 
-	pool, err := repository.NewPool(ctx, databaseURL)
+	pool, err := database.NewPool(ctx, databaseURL)
 	if err != nil {
 		log.Fatalf("Ошибка подключения к БД: %v", err)
 	}
