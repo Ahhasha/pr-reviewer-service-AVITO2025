@@ -1,9 +1,7 @@
-version: '3.9'
-
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: pr-reviewer-service-postgres
+    container_name: pr-reviewer-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: pr_service_password
@@ -12,5 +10,34 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      
+  app:
+    build: .
+    container_name: pr-reviewer-app
+    environment:
+      PORT: 8080
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: pr_service_password
+      DB_NAME: pr_service
+      DB_URL: "postgresql://postgres:pr_service_password@postgres:5432/pr_service?sslmode=disable"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "
+        until pg_isready -h postgres -p 5432; do sleep 2; done &&
+        ./migrate -path /app/migrations -database $$DB_URL up &&
+        ./service
+      "
+
 volumes:
   postgres_data:
