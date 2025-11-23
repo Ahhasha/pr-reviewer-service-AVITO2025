@@ -18,6 +18,7 @@ func NewRouter(teamHandler *handlers.TeamHandler, userHandler *handlers.UserHand
 
 	r.Post("/pullRequest/create", prHandler.CreatePR)
 	r.Post("/pullRequest/merge", prHandler.MergePR)
+	r.Post("/pullRequest/reassign", prHandler.ReassignReviewer)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))

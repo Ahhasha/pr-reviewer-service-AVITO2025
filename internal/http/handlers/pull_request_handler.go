@@ -166,3 +166,85 @@ func (h *PRHandler) MergePR(w http.ResponseWriter, r *http.Request) {
 		"pr": pr,
 	})
 }
+
+func (h *PRHandler) ReassignReviewer(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if r.Method != http.MethodPost {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(api.NewErrorResponse("METHOD_NOT_ALLOWED", "Only POST method"))
+		return
+	}
+
+	var req struct {
+		PRID      string `json:"pull_request_id"`
+		OldUserID string `json:"old_user_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(api.NewErrorResponse("VALIDATION_ERROR", "Invalid JSON format"))
+		return
+	}
+
+	if err := validation.ValidateReassignPR(req.PRID, req.OldUserID); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(api.NewErrorResponse("VALIDATION_ERROR", err.Error()))
+		return
+	}
+
+	newUserID, err := h.prService.ReassignReviewer(ctx, req.PRID, req.OldUserID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		switch err {
+		case postgres.ErrPRNotFound:
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(api.NewErrorResponse("NOT_FOUND", "Pull request not found"))
+		case postgres.ErrNoCandidate:
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(api.NewErrorResponse("NO_CANDIDATE", "No active replacement candidate in team"))
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(api.NewErrorResponse("INTERNAL_ERROR", "Failed to find replacement"))
+		}
+		return
+	}
+
+	err = h.prRepo.Reassign(ctx, req.PRID, req.OldUserID, newUserID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		switch err {
+		case postgres.ErrPRNotFound:
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(api.NewErrorResponse("NOT_FOUND", "Pull request not found"))
+		case postgres.ErrPRMerged:
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(api.NewErrorResponse("PR_MERGED", "Cannot reassign on merged PR"))
+		case postgres.ErrNotAssigned:
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(api.NewErrorResponse("NOT_ASSIGNED", "Reviewer is not assigned to this PR"))
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(api.NewErrorResponse("INTERNAL_ERROR", "Failed to reassign reviewer"))
+		}
+		return
+	}
+
+	pr, err := h.prRepo.GetByID(ctx, req.PRID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(api.NewErrorResponse("INTERNAL_ERROR", "Failed to get updated PR"))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"pr":          pr,
+		"replaced_by": newUserID,
+	})
+}

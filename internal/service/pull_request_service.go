@@ -50,3 +50,42 @@ func (s *PRService) FindReviewersForAuthor(ctx context.Context, authorID string)
 
 	return reviewers, nil
 }
+
+func (s *PRService) ReassignReviewer(ctx context.Context, prID, oldUserID string) (string, error) {
+	s.lgr.Info("Search for a new reviewer", "pr_id", prID, "old_user_id", oldUserID)
+
+	pr, err := s.prRepo.GetByID(ctx, prID)
+	if err != nil {
+		s.lgr.Error("failed to find PR", "pr_id", prID, "error", err)
+		return "", err
+	}
+
+	team, err := s.teamRepo.GetByUserID(ctx, pr.AuthorId)
+	if err != nil {
+		s.lgr.Error("failed to find author team", "author_id", pr.AuthorId, "error", err)
+		return "", fmt.Errorf("author has no team: %w", err)
+	}
+
+	assignedMap := make(map[string]bool)
+	for _, reviewer := range pr.AssignedReviewers {
+		assignedMap[reviewer] = true
+	}
+
+	var candidates []string
+	for _, member := range team.Members {
+		if member.UserId != pr.AuthorId && member.UserId != oldUserID && member.IsActive && !assignedMap[member.UserId] {
+			candidates = append(candidates, member.UserId)
+		}
+	}
+
+	s.lgr.Info("found replacement candidates", "pr_id", prID, "candidates_count", len(candidates), "candidates", candidates)
+
+	if len(candidates) == 0 {
+		s.lgr.Error("no replacement candidates found", "pr_id", prID, "old_user_id", oldUserID)
+		return "", postgres.ErrNoCandidate
+	}
+
+	newUserID := candidates[0]
+	s.lgr.Info("selected replacement reviewer", "pr_id", prID, "new_user_id", newUserID)
+	return newUserID, nil
+}

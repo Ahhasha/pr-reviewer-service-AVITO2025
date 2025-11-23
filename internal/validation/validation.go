@@ -111,3 +111,21 @@ func ValidateUserID(userID string) error {
 	}
 	return nil
 }
+
+func ValidateReassignPR(prID, oldUserID string) error {
+	if prID == "" {
+		return &ValidationError{
+			Place:   "pull_request_id",
+			Message: "Cannot be empty",
+		}
+	}
+
+	if oldUserID == "" {
+		return &ValidationError{
+			Place:   "old_user_id",
+			Message: "Cannot be empty",
+		}
+	}
+
+	return nil
+}
