@@ -29,14 +29,17 @@ func main() {
 
 	teamRepo := postgres.NewTeamRepo(pool)
 	userRepo := postgres.NewUserRepo(pool)
+	prRepo := postgres.NewPullRequestRepo(pool)
 
 	teamService := service.NewTeamService(teamRepo, lgr)
 	userService := service.NewUserService(userRepo, lgr)
+	prService := service.NewPRService(prRepo, teamRepo, lgr)
 
 	teamHandler := handlers.NewTeamHandler(teamService)
 	userHandler := handlers.NewUserHandler(userService)
+	prHandler := handlers.NewPRHandler(prService, prRepo)
 
-	router := myhttp.NewRouter(teamHandler, userHandler)
+	router := myhttp.NewRouter(teamHandler, userHandler, prHandler)
 
 	lgr.Info("Server start on :8080")
 	log.Fatal(http.ListenAndServe(":8080", router))

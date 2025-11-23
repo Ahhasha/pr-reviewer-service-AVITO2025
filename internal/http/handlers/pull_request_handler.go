@@ -81,3 +81,30 @@ func (h *PRHandler) CreatePR(w http.ResponseWriter, r *http.Request) {
 		"pr": pr,
 	})
 }
+
+func (h *PRHandler) GetReview(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	userID := r.URL.Query().Get("user_id")
+	if userID == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(api.NewErrorResponse("VALIDATION_ERROR", "user_id cannot be empty"))
+		return
+	}
+
+	prs, err := h.prRepo.GetByReviewer(ctx, userID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(api.NewErrorResponse("INTERNAL_ERROR", "Failed to get user PR"))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"user_id":       userID,
+		"pull_requests": prs,
+	})
+}

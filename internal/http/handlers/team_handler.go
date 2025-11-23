@@ -68,7 +68,7 @@ func (h *TeamHandler) GetTeam(w http.ResponseWriter, r *http.Request) {
 	if teamName == "" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(api.NewErrorResponse("VALIDATION_ERROR", "team_name is required"))
+		json.NewEncoder(w).Encode(api.NewErrorResponse("VALIDATION_ERROR", "team_name cannot be empty"))
 		return
 	}
 
