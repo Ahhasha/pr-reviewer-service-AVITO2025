@@ -91,3 +91,23 @@ func ValidateCreatePR(authorID, prID, name string) error {
 
 	return nil
 }
+
+func ValidateMergePR(prID string) error {
+	if prID == "" {
+		return &ValidationError{
+			Place:   "pull_request_id",
+			Message: "Cannot be empty",
+		}
+	}
+	return nil
+}
+
+func ValidateUserID(userID string) error {
+	if userID == "" {
+		return &ValidationError{
+			Place:   "user_id",
+			Message: "Cannot be empty",
+		}
+	}
+	return nil
+}

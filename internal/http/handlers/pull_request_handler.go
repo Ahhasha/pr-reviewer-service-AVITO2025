@@ -27,7 +27,7 @@ func (h *PRHandler) CreatePR(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(api.NewErrorResponse("METHOD_NOT_ALLOWED", "Only POST method is allowed"))
+		json.NewEncoder(w).Encode(api.NewErrorResponse("METHOD_NOT_ALLOWED", "Only POST method"))
 		return
 	}
 
@@ -86,7 +86,7 @@ func (h *PRHandler) GetReview(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	userID := r.URL.Query().Get("user_id")
-	if userID == "" {
+	if err := validation.ValidateUserID(userID); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(api.NewErrorResponse("VALIDATION_ERROR", "user_id cannot be empty"))
@@ -106,5 +106,63 @@ func (h *PRHandler) GetReview(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"user_id":       userID,
 		"pull_requests": prs,
+	})
+}
+
+func (h *PRHandler) MergePR(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if r.Method != http.MethodPost {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(api.NewErrorResponse("METHOD_NOT_ALLOWED", "Only POST method"))
+		return
+	}
+
+	var req struct {
+		PRID string `json:"pull_request_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(api.NewErrorResponse("VALIDATION_ERROR", "Invalid JSON format"))
+		return
+	}
+
+	if err := validation.ValidateMergePR(req.PRID); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(api.NewErrorResponse("VALIDATION_ERROR", err.Error()))
+		return
+	}
+
+	err := h.prRepo.Merge(ctx, req.PRID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch err {
+		case postgres.ErrPRNotFound:
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(api.NewErrorResponse("NOT_FOUND", "Pull request not found"))
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(api.NewErrorResponse("INTERNAL_ERROR", "Failed to merge PR"))
+		}
+		return
+	}
+
+	pr, err := h.prRepo.GetByID(ctx, req.PRID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(api.NewErrorResponse("INTERNAL_ERROR", "Failed to get updated PR"))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"pr": pr,
 	})
 }
