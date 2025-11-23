@@ -111,3 +111,18 @@ func (r *TeamRepo) GetByName(ctx context.Context, teamName string) (*api.Team, e
 	}
 	return &team, nil
 }
+
+func (r *TeamRepo) GetByUserID(ctx context.Context, userID string) (*api.Team, error) {
+	var teamName string
+	err := r.pool.QueryRow(ctx, `
+		SELECT t.team_name
+		FROM teams t JOIN team_members tm ON t.id = tm.team_id
+		WHERE tm.user_id = $1
+	`, userID).Scan(&teamName)
+
+	if err != nil {
+		return nil, ErrTeamNotFound
+	}
+
+	return r.GetByName(ctx, teamName)
+}
