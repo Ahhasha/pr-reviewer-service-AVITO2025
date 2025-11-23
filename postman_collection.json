@@ -1,0 +1,278 @@
+{
+  "info": {
+    "name": "PR Reviewer Service API - Complete",
+    "description": "Полная коллекция всех API endpoints для сервиса назначения ревьюверов",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Team Management",
+      "item": [
+        {
+          "name": "Create Team",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"team_name\": \"backend-team\",\n  \"members\": [\n    {\n      \"user_id\": \"user1\",\n      \"username\": \"Alice\",\n      \"is_active\": true\n    },\n    {\n      \"user_id\": \"user2\", \n      \"username\": \"Bob\",\n      \"is_active\": true\n    },\n    {\n      \"user_id\": \"user3\",\n      \"username\": \"Charlie\",\n      \"is_active\": true\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/team/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["team", "add"]
+            }
+          }
+        },
+        {
+          "name": "Get Team",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/team/get?team_name=backend-team",
+              "host": ["{{baseUrl}}"],
+              "path": ["team", "get"],
+              "query": [
+                {
+                  "key": "team_name",
+                  "value": "backend-team"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Set User Active",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"user2\",\n  \"is_active\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/setIsActive",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "setIsActive"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pull Request Management",
+      "item": [
+        {
+          "name": "Create PR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type", 
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pull_request_id\": \"pr-backend-1\",\n  \"pull_request_name\": \"Add authentication\",\n  \"author_id\": \"user1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pullRequest/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["pullRequest", "create"]
+            }
+          }
+        },
+        {
+          "name": "Merge PR", 
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pull_request_id\": \"pr-backend-1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pullRequest/merge",
+              "host": ["{{baseUrl}}"],
+              "path": ["pullRequest", "merge"]
+            }
+          }
+        },
+        {
+          "name": "Get User Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/getReview?user_id=user2",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "getReview"],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "user2"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reassign Workflow - Large Team",
+      "item": [
+        {
+          "name": "Create Large Team for Reassign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"team_name\": \"large-dev-team\",\n  \"members\": [\n    {\n      \"user_id\": \"dev1\",\n      \"username\": \"Developer1\",\n      \"is_active\": true\n    },\n    {\n      \"user_id\": \"dev2\",\n      \"username\": \"Developer2\", \n      \"is_active\": true\n    },\n    {\n      \"user_id\": \"dev3\",\n      \"username\": \"Developer3\",\n      \"is_active\": true\n    },\n    {\n      \"user_id\": \"dev4\",\n      \"username\": \"Developer4\",\n      \"is_active\": true\n    },\n    {\n      \"user_id\": \"dev5\",\n      \"username\": \"Developer5\",\n      \"is_active\": true\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/team/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["team", "add"]
+            }
+          }
+        },
+        {
+          "name": "Create PR for Reassign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pull_request_id\": \"pr-reassign-test\",\n  \"pull_request_name\": \"Reassign Test Feature\",\n  \"author_id\": \"dev1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pullRequest/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["pullRequest", "create"]
+            }
+          }
+        },
+        {
+          "name": "Reassign Reviewer - Success Case",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pull_request_id\": \"pr-reassign-test\",\n  \"old_user_id\": \"dev2\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pullRequest/reassign",
+              "host": ["{{baseUrl}}"],
+              "path": ["pullRequest", "reassign"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Scenarios",
+      "item": [
+        {
+          "name": "Reassign on Small Team - No Candidates",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pull_request_id\": \"pr-backend-1\",\n  \"old_user_id\": \"user2\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pullRequest/reassign",
+              "host": ["{{baseUrl}}"],
+              "path": ["pullRequest", "reassign"]
+            }
+          }
+        },
+        {
+          "name": "Reassign on Merged PR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pull_request_id\": \"pr-backend-1\",\n  \"old_user_id\": \"user3\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pullRequest/reassign",
+              "host": ["{{baseUrl}}"],
+              "path": ["pullRequest", "reassign"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
