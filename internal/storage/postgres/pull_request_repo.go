@@ -67,7 +67,7 @@ func (r *PullRequestRepo) GetByID(ctx context.Context, prID string) (*api.PullRe
 
 	query := `
 			SELECT id, name, author_id, status, created_at, merged_at
-			FROM pull_request
+			FROM pull_requests
 			WHERE id = $1
 	`
 
@@ -128,4 +128,70 @@ func (r *PullRequestRepo) Merge(ctx context.Context, prID string) error {
 		return ErrPRNotFound
 	}
 	return nil
+}
+
+func (r *PullRequestRepo) GetByReviewer(ctx context.Context, userID string) ([]api.PullRequestShort, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	query := `
+		SELECT pr.id, pr.name, pr.author_id, pr.status
+		FROM pull_requests pr JOIN pr_reviewers rev ON pr.id = rev.pr_id  
+		WHERE rev.user_id = $1
+		`
+
+	rows, err := r.pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("query PR reviewer: %w", err)
+	}
+	defer rows.Close()
+
+	var prs []api.PullRequestShort
+
+	for rows.Next() {
+		var pr api.PullRequestShort
+
+		err := rows.Scan(&pr.PullRequestId, &pr.PullRequestName, &pr.AuthorId, &pr.Status)
+
+		if err != nil {
+			return nil, fmt.Errorf("scan pr: %w", err)
+		}
+		prs = append(prs, pr)
+	}
+	return prs, nil
+}
+
+func (r *PullRequestRepo) Reassign(ctx context.Context, prID, oldUserID, newUserID string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	var status string
+	err = tx.QueryRow(ctx, "SELECT status FROM pull_requests WHERE id = $1", prID).Scan(&status)
+	if err != nil {
+		return ErrPRNotFound
+	}
+	if status == "MERGED" {
+		return ErrPRMerged
+	}
+
+	var count int
+	err = tx.QueryRow(ctx, "SELECT COUNT(*) FROM pr_reviewers WHERE pr_id = $1 AND user_id = $2", prID, oldUserID).Scan(&count)
+	if err != nil {
+		return fmt.Errorf("check reviewer: %w", err)
+	}
+	if count == 0 {
+		return ErrNotAssigned
+	}
+
+	_, err = tx.Exec(ctx, "UPDATE pr_reviewers SET user_id = $1 WHERE pr_id = $2 AND user_id = $3", newUserID, prID, oldUserID)
+	if err != nil {
+		return fmt.Errorf("reassign reviewer: %w", err)
+	}
+	return tx.Commit(ctx)
 }
