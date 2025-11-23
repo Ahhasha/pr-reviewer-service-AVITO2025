@@ -68,9 +68,10 @@ func (s *PRService) ReassignReviewer(ctx context.Context, prID, oldUserID string
 
 	assignedMap := make(map[string]bool)
 	for _, reviewer := range pr.AssignedReviewers {
-		assignedMap[reviewer] = true
+		if reviewer != oldUserID {
+			assignedMap[reviewer] = true
+		}
 	}
-
 	var candidates []string
 	for _, member := range team.Members {
 		if member.UserId != pr.AuthorId && member.UserId != oldUserID && member.IsActive && !assignedMap[member.UserId] {
